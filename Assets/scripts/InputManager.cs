@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-
 public class InputManager : MonoBehaviour
 {
     private PlayerInput playerInput;
@@ -11,28 +10,25 @@ public class InputManager : MonoBehaviour
 
     private PlayerMotor motor;
     private PlayerLook look;
-    // Start is called before the first frame update
+
     void Awake()
     {
-
         playerInput = new PlayerInput();
         onFoot = playerInput.OnFoot;
 
-        motor = GetComponent<PlayerMotor>();
-        look = GetComponent<PlayerLook>();
+        // Assume PlayerMotor and PlayerLook are on a GameObject named "Player"
+        GameObject player = GameObject.Find("Player");
+        motor = player.GetComponent<PlayerMotor>();
+        look = player.GetComponent<PlayerLook>();
 
         onFoot.Jump.performed += ctx => motor.Jump();
-
     }
 
-    // Update is called once per frame
     void FixedUpdate()
     {
-        // tell the playermotor to move using the value from our movement action
         motor.ProcessMove(onFoot.Movement.ReadValue<Vector2>());
-
-
     }
+
     void LateUpdate()
     {
         look.ProcessLook(onFoot.Look.ReadValue<Vector2>());
@@ -42,11 +38,9 @@ public class InputManager : MonoBehaviour
     {
         onFoot.Enable();
     }
-    
+
     private void OnDisable()
     {
         onFoot.Disable();
     }
-
-
 }
