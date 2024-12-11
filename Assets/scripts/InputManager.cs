@@ -15,13 +15,31 @@ public class InputManager : MonoBehaviour
     {
         playerInput = new PlayerInput();
         onFoot = playerInput.OnFoot;
+      
 
         // Assume PlayerMotor and PlayerLook are on a GameObject named "Player"
         GameObject player = GameObject.Find("Player");
+
+
         motor = player.GetComponent<PlayerMotor>();
+        
         look = player.GetComponent<PlayerLook>();
+        
 
         onFoot.Jump.performed += ctx => motor.Jump();
+    }
+
+    void Update() 
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            QuitGame();
+        }
+    }
+
+    private void QuitGame()
+    {
+        Debug.Log("Quitting game...");
     }
 
     void FixedUpdate()
