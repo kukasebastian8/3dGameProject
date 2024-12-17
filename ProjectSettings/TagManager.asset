@@ -7,6 +7,8 @@ TagManager:
   - Bullet
   - Target
   - ScoreText
+  - button 1
+  - button 2
   layers:
   - Default
   - TransparentFX
