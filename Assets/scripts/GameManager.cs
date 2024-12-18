@@ -1,95 +1,74 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;  // Using TextMesh Pro for the UI
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; } // Singleton instance
+    public static GameManager Instance { get; private set; } // Singleton instance for global access
     public int score = 0; // Player's score
-    public Text scoreText; // Reference to the Text UI component
+    public TextMeshProUGUI scoreText; // This should match the component type used in Unity (TextMeshProUGUI for UI text)
+    
+    private int totalTargets = 0; // Total number of targets in the current scene
+    private int targetsHit = 0; // Counter for the number of targets hit
 
-    private int startingScoreInLevel1 = 0; // Tracks the score at the start of Level1
-    private const int scoreThreshold = 1000; // Points needed to reload SampleScene
-
-    private void Awake()
+    void Awake()
     {
-        // Ensure only one instance of GameManager exists
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Keeps the GameManager active across scenes
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
-            Destroy(gameObject); // Destroy duplicate GameManagers
+            Destroy(gameObject);
         }
     }
 
-    private void Start()
+    void Start()
     {
-        AssignScoreText(); // Assign scoreText in the current scene
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    private void OnEnable()
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        SceneManager.sceneLoaded += OnSceneLoaded; // Subscribe to scene loaded event
+        ResetGameState();
+        AssignScoreText();
+        CountTargets(); // Count targets again whenever a new scene is loaded
     }
 
-    private void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded; // Unsubscribe to prevent memory leaks
-    }
-
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        AssignScoreText(); // Reassign scoreText for the new scene
-
-        // If the current scene is Level1, record the starting score
-        if (scene.name == "Level1")
-        {
-            startingScoreInLevel1 = score;
-        }
-    }
-
-    private void AssignScoreText()
+    void AssignScoreText()
     {
         GameObject scoreTextObject = GameObject.FindWithTag("ScoreText");
         if (scoreTextObject != null)
         {
-            scoreText = scoreTextObject.GetComponent<Text>();
-            UpdateScoreUI();
+            scoreText = scoreTextObject.GetComponent<TextMeshProUGUI>();
+            if (scoreText == null)
+            {
+                Debug.LogError("TextMeshProUGUI component not found on the object tagged as 'ScoreText'. Please add it.");
+            }
+            else
+            {
+                UpdateScoreUI(); // Update score immediately to reflect the initial state.
+            }
         }
         else
         {
-            Debug.LogWarning("No ScoreText object found in the current scene.");
+            Debug.LogWarning("No GameObject found with the tag 'ScoreText' in this scene.");
         }
     }
 
     public void AddScore(int amount)
     {
-        score += amount; // Increase the score
-        UpdateScoreUI();
-
-        // Check if score threshold is met in Level1
-        CheckScoreThreshold();
-    }
-
-    private void CheckScoreThreshold()
-    {
-        // If in Level1 and the threshold is reached, reload SampleScene
-        if (SceneManager.GetActiveScene().name == "Level1" && score - startingScoreInLevel1 >= scoreThreshold)
+        if (targetsHit < totalTargets)
         {
-            ReloadSampleScene();
+            score += amount;
+            targetsHit++;
+            UpdateScoreUI();
+            CheckCompletion();
         }
     }
 
-    private void ReloadSampleScene()
-    {
-        Debug.Log("Score threshold reached! Reloading SampleScene...");
-        SceneManager.LoadScene("SampleScene");
-    }
-
-    private void UpdateScoreUI()
+    void UpdateScoreUI()
     {
         if (scoreText != null)
         {
@@ -97,4 +76,35 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    void CheckCompletion()
+    {
+        if (targetsHit >= totalTargets)
+        {
+            Debug.Log("All targets hit. Returning to SampleScene...");
+            Invoke("LoadSampleScene", 2); // Adds a delay of 2 seconds before loading the sample scene
+        }
+    }
+
+    void ResetGameState()
+    {
+        score = 0;
+        targetsHit = 0;
+        UpdateScoreUI();
+    }
+
+    void LoadSampleScene()
+    {
+        SceneManager.LoadScene("SampleScene");
+    }
+
+    void CountTargets()
+    {
+        totalTargets = FindObjectsOfType<TargetHitDetection>().Length;
+        Debug.Log("Total targets in the scene: " + totalTargets);
+    }
+
+    void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
 }
